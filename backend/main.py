@@ -45,8 +45,6 @@ for code in codes:
         find_goods.click()
         tm.sleep(2)
 
-
-
         # Получение HTML-кода страницы
         page_source = str(driver.page_source)
 
@@ -63,9 +61,7 @@ for code in codes:
         except:
             delivery_info = ''
 
-
-
-    #работа с html
+        # работа с html
         # Получение названия товара
         name_element = soup.find('h1')
         name = name_element.text.strip() if name_element else 'No name'
@@ -74,9 +70,8 @@ for code in codes:
         page_url = url + '/' + code
 
         # Получение URL первой картинки
-        image_element = soup.find('img')
+        image_element = soup.select(f'img[alt*="{name}"]')[0]
         image_url = image_element.get('src') if image_element else ''
-
 
         # Получение цены со скидкой без Ozon Карты
         price_element = soup.find('span', string="без Ozon Карты").parent.parent.find('div').findAll('span')
