@@ -67,7 +67,7 @@ for code in codes:
         name = name_element.text.strip() if name_element else 'No name'
 
         # Получение URL страницы с товаром
-        page_url = url + '/product/' + code
+        page_url = url + '/' + code
 
         # Получение URL первой картинки
         image_element = soup.select(f'img[alt*="{name}"]')[0]
