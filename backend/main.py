@@ -43,7 +43,7 @@ for code in codes:
         except:
             continue
         find_goods.click()
-        tm.sleep(4)
+        tm.sleep(2)
 
         # Получение HTML-кода страницы
         page_source = str(driver.page_source)
@@ -54,20 +54,21 @@ for code in codes:
         # Получение названия товара
         name_element = soup.find('h1')
         name = name_element.text.strip() if name_element else 'No name'
+        tm.sleep(2)
 
-
-        # if soup.find('video-player'):
-        #     print('video')
-        #     find_img = driver.find_element(By.XPATH, '//*[@data-index="1"]/div/img')
-        #     find_img.click()
-        #     tm.sleep(1)
-        #     image_element = soup.find('div', {"data-widget": "webGallery"}).findNext('div').findAll('div')[1].findAll('div')[0].findNext('img')
-        #     print(image_element)
-        #     image_url = ''
+        if True:
+            print('video')
+            find_img = driver.find_element(By.XPATH, '//*[@data-index="1"]').find_element(By.TAG_NAME, 'img')
+            find_img.click()
+            tm.sleep(1)
+            image_element = driver.find_element(By.CSS_SELECTOR, f'//*[@alt*="{name}"]').get_attribute('src')
+            print(image_element)
+            image_url = ''
         # else:
         #     # Получение URL первой картинки
         #     image_element = soup.select(f'img[alt*="{name}"]')
-        #     image_url = image_element[1].get('src') if image_element else ''
+        #     print(soup.select(f'img[alt*="{name}"]'))
+        #     # image_url = image_element[1].get('src') if image_element else ''
 
         # Получение информации о доставке в Москве
         tm.sleep(1)
@@ -80,7 +81,7 @@ for code in codes:
             delivery_info = ''
 
         # Получение URL страницы с товаром
-        page_url = url + '/' + code
+        page_url = url + '/product/' + code
 
         # Получение цены со скидкой без Ozon Карты
         price_element = soup.find('span', string="без Ozon Карты").parent.parent.find('div').findAll('span')
@@ -92,10 +93,6 @@ for code in codes:
         # Получение цены по Ozon Карте
         ozon_card_price_element = soup.find('span', string="c Ozon Картой").parent.find('div').find('span')
         ozon_card_price = ozon_card_price_element.text.strip() if ozon_card_price_element else ''
-
-        # Получение продавца
-        seller_element = soup.find('div', {"data-widget": "webCurrentSeller"}).select('a[href*="ozon.ru/seller"]')
-        seller = seller_element[-1].get('title').strip() if seller_element else ''
 
         # Получение количества отзывов, видео, вопросов
         reviews_element = soup.find('div', {"data-widget": "webReviewProductScore"}).find('a').find('div')
@@ -124,6 +121,10 @@ for code in codes:
         # Получение информации об уцененном товаре
         damaged_element = soup.find('div', {'class': 'd7b1'})
         damaged_info = damaged_element.text.strip() if damaged_element else ''
+
+        # Получение продавца
+        seller_element = soup.find( 'div', {"data-widget":"webCurrentSeller"}).select('a[href*="ozon.ru/seller"]' )
+        seller = seller_element[-1].get('title').strip() if seller_element else ''
 
         # Заполнение DataFrame
         df = pd.concat([
