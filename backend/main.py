@@ -43,7 +43,8 @@ for code in codes:
         except:
             continue
         find_goods.click()
-        tm.sleep(2)
+
+        tm.sleep(6)
 
         # Получение HTML-кода страницы
         page_source = str(driver.page_source)
@@ -54,26 +55,26 @@ for code in codes:
         # Получение названия товара
         name_element = soup.find('h1')
         name = name_element.text.strip() if name_element else 'No name'
-        tm.sleep(2)
-
-        if True:
+        # Получение URL первой картинки если первое видео
+        if soup.find('div', {"data-widget": "webGallery"}).find('video-player') or soup.find('div', {"data-widget": "webGallery"}).find('video'):
             print('video')
             find_img = driver.find_element(By.XPATH, '//*[@data-index="1"]').find_element(By.TAG_NAME, 'img')
             find_img.click()
-            tm.sleep(1)
-            image_element = driver.find_element(By.CSS_SELECTOR, f'//*[@alt*="{name}"]').get_attribute('src')
+            tm.sleep(2)
+            page_source = str(driver.page_source)
+            soup = BeautifulSoup(page_source, 'html.parser')
+            image_element = soup.select(f'img[alt*="{name[:30]}"]')
             print(image_element)
-            image_url = ''
-        # else:
-        #     # Получение URL первой картинки
-        #     image_element = soup.select(f'img[alt*="{name}"]')
-        #     print(soup.select(f'img[alt*="{name}"]'))
-        #     # image_url = image_element[1].get('src') if image_element else ''
+            image_url = image_element[0].get('src') if image_element else ''
+        else:
+            # Получение URL первой картинки
+            print('photo')
+            image_element = soup.select(f'img[alt*="{name[:30]}"]')
+            image_url = image_element[0].get('src') if image_element else ''
 
         # Получение информации о доставке в Москве
-        tm.sleep(1)
         driver.execute_script("window.scrollBy(0, 3200)")
-        tm.sleep(4)
+        tm.sleep(3)
         try:
             delivery_info_element = soup.find('h2', string="Информация о доставке").parent
             delivery_info = delivery_info_element.text.strip() if delivery_info_element else ''
@@ -132,7 +133,7 @@ for code in codes:
                 'Код товара': [code],
                 'Название товара': [name],
                 'URL страницы с товаром': [page_url],
-                # 'URL первой картинки': [image_url],
+                'URL первой картинки': [image_url],
                 'Цена базовая': [base_price],
                 'Цена с учетом скидок без Ozon Карты': [discount_price],
                 'Цена по Ozon Карте': [ozon_card_price],
