@@ -54,7 +54,7 @@ for code in codes:
         # работа с html
         # Получение названия товара
         name_element = soup.find('h1')
-        name = name_element.text.strip() if name_element else 'No name'
+        name = name_element.text.strip().replace('"', "&quot;") if name_element else 'No name'
         # Получение URL первой картинки если первое видео
         if soup.find('div', {"data-widget": "webGallery"}).find('video-player') or soup.find('div', {"data-widget": "webGallery"}).find('video'):
             print('video')
@@ -70,11 +70,12 @@ for code in codes:
             # Получение URL первой картинки
             print('photo')
             image_element = soup.select(f'img[alt*="{name[:30]}"]')
+
             image_url = image_element[0].get('src') if image_element else ''
 
         # Получение информации о доставке в Москве
         driver.execute_script("window.scrollBy(0, 3200)")
-        tm.sleep(3)
+        tm.sleep(2)
         try:
             delivery_info_element = soup.find('h2', string="Информация о доставке").parent
             delivery_info = delivery_info_element.text.strip() if delivery_info_element else ''
@@ -96,14 +97,22 @@ for code in codes:
         ozon_card_price = ozon_card_price_element.text.strip() if ozon_card_price_element else ''
 
         # Получение количества отзывов, видео, вопросов
-        reviews_element = soup.find('div', {"data-widget": "webReviewProductScore"}).find('a').find('div')
-        reviews_count = reviews_element.text.strip().split()[0] if reviews_element else ''
+        try:
+            reviews_element = soup.find('div', {"data-widget": "webReviewProductScore"}).find('a').find('div')
+            reviews_count = reviews_element.text.strip().split()[0] if reviews_element else ''
+        except:
+            reviews_count = ''
+        try:
+            video_element = soup.find('div', {"data-widget": "webVideosCount"}).find('a').find('div')
+            video_count = video_element.text.strip().split()[0] if video_element else ''
+        except:
+            video_count = ''
 
-        video_element = soup.find('div', {"data-widget": "webVideosCount"}).find('a').find('div')
-        video_count = video_element.text.strip().split()[0] if video_element else ''
-
-        questions_element = soup.find('div', {"data-widget": "webQuestionCount"}).find('a').find('div')
-        questions_count = questions_element.text.strip().split()[0] if questions_element else ''
+        try:
+            questions_element = soup.find('div', {"data-widget": "webQuestionCount"}).find('a').find('div')
+            questions_count = questions_element.text.strip().split()[0] if questions_element else ''
+        except:
+            questions_count = ''
 
         print(reviews_count, video_count, questions_count)
 
@@ -156,7 +165,7 @@ driver.quit()
 print(df.to_string())
 
 # Сохранение DataFrame в файл
-df.to_excel('products.xlsx', index=False)
+df.to_excel('products_pillow.xlsx', index=False)
 
 
 
