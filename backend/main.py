@@ -11,7 +11,7 @@ with open('codes.txt', 'r') as f:
     codes = f.read().splitlines()
 
 # Создание пустого DataFrame для хранения данных
-df = pd.DataFrame(columns=['Код товара', 'Название товара', 'URL страницы с товаром', 'URL первой картинки', 'Цена базовая', 'Цена с учетом скидок без Ozon Карты', 'Цена по Ozon Карте', 'Продавец', 'Количество отзывов', 'Количество видео', 'Количество вопросов', 'Рейтинг товара', 'Все доступные характеристики товара', 'Информация о доставке в Москве', 'Уцененный товар'])
+df = pd.DataFrame(columns=['Код товара', 'Название товара', 'URL страницы с товаром', 'URL первой картинки', 'Цена базовая', 'Цена с учетом скидок без Ozon Карты', 'Цена по Ozon Карте', 'Продавец', 'Количество отзывов', 'Количество видео', 'Количество вопросов', 'Рейтинг товара', 'Все доступные характеристики товара', 'Информация о доставке в Москве'])
 
 # Инициализация веб-драйвера
 driver = uc.Chrome()
@@ -20,7 +20,7 @@ driver.implicitly_wait(10)
 
 # Парсинг каждого товара
 for code in codes:
-    try:
+    # try:
         print(code)
         #получение ссылки на товар через костыли
         #ссылка на главную страницу озон
@@ -43,17 +43,35 @@ for code in codes:
         except:
             continue
         find_goods.click()
-        tm.sleep(2)
+        tm.sleep(4)
 
         # Получение HTML-кода страницы
         page_source = str(driver.page_source)
 
         # Создание объекта BeautifulSoup для парсинга HTML-кода
         soup = BeautifulSoup(page_source, 'html.parser')
+        # работа с html
+        # Получение названия товара
+        name_element = soup.find('h1')
+        name = name_element.text.strip() if name_element else 'No name'
+
+
+        # if soup.find('video-player'):
+        #     print('video')
+        #     find_img = driver.find_element(By.XPATH, '//*[@data-index="1"]/div/img')
+        #     find_img.click()
+        #     tm.sleep(1)
+        #     image_element = soup.find('div', {"data-widget": "webGallery"}).findNext('div').findAll('div')[1].findAll('div')[0].findNext('img')
+        #     print(image_element)
+        #     image_url = ''
+        # else:
+        #     # Получение URL первой картинки
+        #     image_element = soup.select(f'img[alt*="{name}"]')
+        #     image_url = image_element[1].get('src') if image_element else ''
 
         # Получение информации о доставке в Москве
         tm.sleep(1)
-        driver.execute_script("window.scrollBy(0, 2200)")
+        driver.execute_script("window.scrollBy(0, 3200)")
         tm.sleep(4)
         try:
             delivery_info_element = soup.find('h2', string="Информация о доставке").parent
@@ -61,17 +79,8 @@ for code in codes:
         except:
             delivery_info = ''
 
-        # работа с html
-        # Получение названия товара
-        name_element = soup.find('h1')
-        name = name_element.text.strip() if name_element else 'No name'
-
         # Получение URL страницы с товаром
         page_url = url + '/' + code
-
-        # Получение URL первой картинки
-        image_element = soup.select(f'img[alt*="{name}"]')[0]
-        image_url = image_element.get('src') if image_element else ''
 
         # Получение цены со скидкой без Ozon Карты
         price_element = soup.find('span', string="без Ozon Карты").parent.parent.find('div').findAll('span')
@@ -85,19 +94,24 @@ for code in codes:
         ozon_card_price = ozon_card_price_element.text.strip() if ozon_card_price_element else ''
 
         # Получение продавца
-        seller_element = soup.select('a[href*="ozon.ru/seller"]')
+        seller_element = soup.find('div', {"data-widget": "webCurrentSeller"}).select('a[href*="ozon.ru/seller"]')
         seller = seller_element[-1].get('title').strip() if seller_element else ''
 
         # Получение количества отзывов, видео, вопросов
-        reviews_element = soup.findAll('div', {'class': 'a2429-e7'})
-        reviews_count = reviews_element[0].text.strip().split()[0] if reviews_element[0] else ''
-        video_count = reviews_element[1].text.strip().split()[0] if reviews_element[1] else ''
-        questions_count = reviews_element[2].text.strip().split()[0] if reviews_element[2] else ''
+        reviews_element = soup.find('div', {"data-widget": "webReviewProductScore"}).find('a').find('div')
+        reviews_count = reviews_element.text.strip().split()[0] if reviews_element else ''
+
+        video_element = soup.find('div', {"data-widget": "webVideosCount"}).find('a').find('div')
+        video_count = video_element.text.strip().split()[0] if video_element else ''
+
+        questions_element = soup.find('div', {"data-widget": "webQuestionCount"}).find('a').find('div')
+        questions_count = questions_element.text.strip().split()[0] if questions_element else ''
+
+        print(reviews_count, video_count, questions_count)
 
         # Получение всех доступных характеристик товара
         characteristics_element = soup.findAll('dd')
         characteristics = ', '.join([element.text.strip() for element in characteristics_element]) if characteristics_element else ''
-
 
         # Получение рейтинга
         try:
@@ -106,7 +120,6 @@ for code in codes:
             rate_info = rate_element.text.strip() if rate_element else ''
         except:
             rate_info = 0
-
 
         # Получение информации об уцененном товаре
         damaged_element = soup.find('div', {'class': 'd7b1'})
@@ -118,7 +131,7 @@ for code in codes:
                 'Код товара': [code],
                 'Название товара': [name],
                 'URL страницы с товаром': [page_url],
-                'URL первой картинки': [image_url],
+                # 'URL первой картинки': [image_url],
                 'Цена базовая': [base_price],
                 'Цена с учетом скидок без Ozon Карты': [discount_price],
                 'Цена по Ozon Карте': [ozon_card_price],
@@ -129,11 +142,10 @@ for code in codes:
                 'Рейтинг товара': rate_info,
                 'Все доступные характеристики товара': [characteristics],
                 'Информация о доставке в Москве': [delivery_info],
-                'Уцененный товар': [damaged_info]
             })
         ], ignore_index=True)
-    except:
-        continue
+    # except:
+    #     continue
 
 # Закрытие веб-драйвера
 driver.close()
