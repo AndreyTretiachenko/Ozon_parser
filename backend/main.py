@@ -11,8 +11,8 @@ with open('codes.txt', 'r') as f:
     codes = f.read().splitlines()
 
 # Создание пустого DataFrame для хранения данных
-df = pd.DataFrame(columns=['Код товара', 'Название товара', 'URL страницы с товаром', 'URL первой картинки', 'Цена базовая', 'Цена с учетом скидок без Ozon Карты', 'Цена по Ozon Карте', 'Продавец', 'Количество отзывов', 'Количество видео', 'Количество вопросов', 'Рейтинг товара', 'Все доступные характеристики товара', 'Информация о доставке в Москве'])
-
+# df = pd.DataFrame(columns=['Код товара', 'Название товара', 'URL страницы с товаром', 'URL первой картинки', 'Цена базовая', 'Цена с учетом скидок без Ozon Карты', 'Цена по Ozon Карте', 'Продавец', 'Количество отзывов', 'Количество видео', 'Количество вопросов', 'Рейтинг товара', 'Все доступные характеристики товара', 'Информация о доставке в Москве'])
+df = pd.DataFrame()
 # Инициализация веб-драйвера
 driver = uc.Chrome()
 
@@ -70,12 +70,13 @@ for code in codes:
             # Получение URL первой картинки
             print('photo')
             image_element = soup.select(f'img[alt*="{name[:30]}"]')
-
             image_url = image_element[0].get('src') if image_element else ''
 
         # Получение информации о доставке в Москве
-        driver.execute_script("window.scrollBy(0, 3200)")
-        tm.sleep(2)
+        driver.execute_script("window.scrollBy(0, 7200)")
+        tm.sleep(3)
+        page_source = str(driver.page_source)
+        soup = BeautifulSoup(page_source, 'html.parser')
         try:
             delivery_info_element = soup.find('h2', string="Информация о доставке").parent
             delivery_info = delivery_info_element.text.strip() if delivery_info_element else ''
@@ -86,38 +87,51 @@ for code in codes:
         page_url = url + '/product/' + code
 
         # Получение цены со скидкой без Ozon Карты
-        price_element = soup.find('span', string="без Ozon Карты").parent.parent.find('div').findAll('span')
-        discount_price = price_element[0].text.strip() if price_element[0] else ''
+        try:
+            price_element = soup.find('span', string="без Ozon Карты").parent.parent.find('div').findAll('span')
+            discount_price = price_element[0].text.strip() if price_element[0] else ''
+        except:
+            discount_price = 0
 
         # Получение цены базовая
-        base_price = price_element[1].text.strip() if price_element[1] is not None else ''
+        try:
+            base_price = price_element[1].text.strip() if price_element[1] is not None else ''
+        except:
+            base_price = 0
 
         # Получение цены по Ozon Карте
-        ozon_card_price_element = soup.find('span', string="c Ozon Картой").parent.find('div').find('span')
-        ozon_card_price = ozon_card_price_element.text.strip() if ozon_card_price_element else ''
+        try:
+            ozon_card_price_element = soup.find('span', string="c Ozon Картой").parent.find('div').find('span')
+            ozon_card_price = ozon_card_price_element.text.strip() if ozon_card_price_element else ''
+        except:
+            ozon_card_price = 0
 
         # Получение количества отзывов, видео, вопросов
         try:
             reviews_element = soup.find('div', {"data-widget": "webReviewProductScore"}).find('a').find('div')
+            if reviews_element.text.strip().split()[0] == 'Оставить': raise Exception('error')
             reviews_count = reviews_element.text.strip().split()[0] if reviews_element else ''
         except:
-            reviews_count = ''
+            reviews_count = 0
         try:
             video_element = soup.find('div', {"data-widget": "webVideosCount"}).find('a').find('div')
             video_count = video_element.text.strip().split()[0] if video_element else ''
         except:
-            video_count = ''
+            video_count = 0
 
         try:
             questions_element = soup.find('div', {"data-widget": "webQuestionCount"}).find('a').find('div')
+            if questions_element.text.strip().split()[0] == 'Задать': raise Exception('error')
             questions_count = questions_element.text.strip().split()[0] if questions_element else ''
         except:
-            questions_count = ''
+            questions_count = 0
 
         print(reviews_count, video_count, questions_count)
 
         # Получение всех доступных характеристик товара
+        characteristics_name_element = soup.findAll('dt')
         characteristics_element = soup.findAll('dd')
+        characteristics_zip = zip([element.text.strip() for element in characteristics_name_element],[element.text.strip() for element in characteristics_element])
         characteristics = ', '.join([element.text.strip() for element in characteristics_element]) if characteristics_element else ''
 
         # Получение рейтинга
@@ -153,6 +167,7 @@ for code in codes:
                 'Рейтинг товара': rate_info,
                 'Все доступные характеристики товара': [characteristics],
                 'Информация о доставке в Москве': [delivery_info],
+                **dict(characteristics_zip)
             })
         ], ignore_index=True)
     # except:
@@ -165,7 +180,7 @@ driver.quit()
 print(df.to_string())
 
 # Сохранение DataFrame в файл
-df.to_excel('products_pillow.xlsx', index=False)
+df.to_excel('products.xlsx', index=False)
 
 
 
