@@ -147,7 +147,7 @@ for code in codes:
         damaged_info = damaged_element.text.strip() if damaged_element else ''
 
         # Получение продавца
-        seller_element = soup.find( 'div', {"data-widget":"webCurrentSeller"}).select('a[href*="ozon.ru/seller"]' )
+        seller_element = soup.find('div', {"data-widget":"webCurrentSeller"}).select('a[href*="ozon.ru/seller"]' )
         seller = seller_element[-1].get('title').strip() if seller_element else ''
 
         # Заполнение DataFrame
